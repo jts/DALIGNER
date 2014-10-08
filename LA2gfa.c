@@ -180,7 +180,9 @@ int main(int argc, char *argv[])
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
         exit (1);
       }
+    (void)flags; //shhh warnings
   }
+  
 
   //  Initiate file reading and read (novl, tspace) header
   
@@ -296,8 +298,8 @@ int main(int argc, char *argv[])
         snprintf(a_name, MAX_NAME, "%d", ovl->aread);
         snprintf(b_name, MAX_NAME, "%d", ovl->bread);
 
-        fprintf(stderr, "%d %d %d %d\n", abeg, aend, bbeg, bend);
-        fprintf(stderr, "%d %d %d %d\n", a_left_match, a_right_match, b_left_match, b_right_match);
+        fprintf(stderr, "%s %s %d %d %d %d\n", a_name, b_name, abeg, aend, bbeg, bend);
+        fprintf(stderr, "%s %s %d %d %d %d\n", a_name, b_name, a_left_match, a_right_match, b_left_match, b_right_match);
         
         // Check for local local alignments and skip
         if(!a_left_match && !a_right_match && !b_left_match && !b_right_match)
@@ -341,17 +343,56 @@ int main(int argc, char *argv[])
                                                         position);
           }
         else
-          { 
-            char a_ori = a_left_match ? '-' : '+';
-            char b_ori = b_left_match ? '-' : '+';
-                
-            // Switch b orientation if from different strand
-            if(COMP(aln->flags))
-              b_ori = (b_ori == '-' ? '+' : '-');
+          { //
+            // GFA link orientations:
+            //
+            // S1 -------------->
+            // S2     --------------->
+            // Record: S1 + S2 +
 
-            fprintf(stdout, "L\t%s\t%c\t%s\t%c\t", a_name, a_ori,
-                                                   b_name, b_ori);
+            // S1    -------------->
+            // S2 ------------->
+            // Record: S2 + S1 +
 
+            // S1 -------------->
+            // S2     <---------------
+            // Record: S1 + S2 -
+
+            // S1       <--------------
+            // S2  -------------->
+            // Record: S2 + S2 -
+            char* first_name;
+            char* second_name;
+
+            char first_ori = '+';
+            char second_ori = '+';
+
+            // One of the two reads must have a suffix overlap
+            // and one of the two must have a prefix overlap (after
+            // accounting for reverse complementation)
+            // We write the ID of the read with the suffix overlap
+            // first.
+            // The orientation flags are always set such that the "a"
+            // sequence is on the + strand
+            if(a_right_match)
+              { assert(b_left_match);
+                first_name = a_name;
+                second_name = b_name;
+                first_ori = '+';
+                second_ori = COMP(aln->flags) ? '-' : '+';
+                a_is_base_sequence = 1;
+              } 
+            else 
+              { assert(b_right_match && a_left_match);
+                first_name = b_name;
+                second_name = a_name;
+                first_ori = COMP(aln->flags) ? '-' : '+';
+                second_ori = '+';
+                a_is_base_sequence = 0;
+              }  
+
+            fprintf(stdout, "L\t%s\t%c\t%s\t%c\t", first_name,  first_ori,
+                                                   second_name, second_ori);
           }
 
         // Use the partial trace to reconstruct an alignment between the reads
