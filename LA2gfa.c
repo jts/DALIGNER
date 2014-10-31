@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
     char* seq_buffer = New_Read_Buffer(db);
     char name_buffer[MAX_NAME];
 
-    for (j = 0; j < db->oreads; j++)
+    for (j = 0; j < db->breads; j++)
       { Load_Read(db,j,seq_buffer,2);
 
         snprintf(name_buffer, MAX_NAME, "%d", j);
@@ -233,7 +233,6 @@ int main(int argc, char *argv[])
   }
 
   //  Read the overlap file and display selected records
-  
   { int        j;
     uint16    *trace;
     Work_Data *work;
@@ -270,12 +269,16 @@ int main(int argc, char *argv[])
         aln->alen  = ovl->alen;
         aln->blen  = ovl->blen;
         aln->flags = ovl->flags;
+
+        // Load read sequences from the DB
         Load_Read(db,ovl->aread,aln->aseq,0);
         Load_Read(db,ovl->bread,aln->bseq,0);
         
+        // Flip the second read if necessary
         if (COMP(aln->flags))
           Complement_Seq(aln->bseq);
 
+        // Set up the alignment coordinates
         int abeg = aln->path->abpos;
         int bbeg = aln->path->bbpos;
 
@@ -291,19 +294,28 @@ int main(int argc, char *argv[])
         int b_left_match = bbeg == 0;
         int b_right_match = bend == blen;
 
+        // Stringify names of the reads
         char a_name[MAX_NAME];
         char b_name[MAX_NAME];
 
         // Lazily use read index as ID right now
         snprintf(a_name, MAX_NAME, "%d", ovl->aread);
         snprintf(b_name, MAX_NAME, "%d", ovl->bread);
-
-        fprintf(stderr, "%s %s %d %d %d %d\n", a_name, b_name, abeg, aend, bbeg, bend);
-        fprintf(stderr, "%s %s %d %d %d %d\n", a_name, b_name, a_left_match, a_right_match, b_left_match, b_right_match);
         
-        // Check for local local alignments and skip
-        if(!a_left_match && !a_right_match && !b_left_match && !b_right_match)
-          { fprintf(stderr, "Skipping local alignment\n");
+#ifdef DEBUG_GFA
+        fprintf(stderr, "%s %s [%d %d] %d [%d %d] %d\n",
+                a_name, b_name, abeg, aend, alen, bbeg, bend, blen);
+
+        fprintf(stderr, "%s %s %d %d %d %d Comp? %d\n",
+                 a_name, b_name, a_left_match, a_right_match, b_left_match, b_right_match, COMP(aln->flags));
+#endif
+
+        // Currently we skip local alignments
+        if( (!a_left_match && !a_right_match) || (!b_left_match && !b_right_match))
+          {
+#ifdef DEBUG_GFA
+            fprintf(stderr, "Skipping local alignment\n");
+#endif
             continue;
           }
         
@@ -317,8 +329,6 @@ int main(int argc, char *argv[])
         if( (a_left_match && a_right_match) ||
             (b_left_match && b_right_match))
           { 
-            fprintf(stderr, "Containment\n");
-  
             char* container_name;
             char* contained_name;
 
@@ -361,6 +371,12 @@ int main(int argc, char *argv[])
             // S1       <--------------
             // S2  -------------->
             // Record: S2 + S2 -
+
+            // Check that the relationship between the reads
+            // is a proper overlap
+            if(a_left_match == b_left_match && a_right_match == b_right_match)
+                continue;
+
             char* first_name;
             char* second_name;
 
@@ -399,7 +415,7 @@ int main(int argc, char *argv[])
         Compute_Trace_PTS(aln,work,tspace);
 
         //  Calculate the CIGAR string from the trace and write it directly to stdout
-        Print_Cigar(stdout,aln, a_is_base_sequence);
+        Print_Cigar(stdout, aln, a_is_base_sequence);
         fprintf(stdout, "\n");
       }
 
