@@ -248,6 +248,12 @@ the initial sort jobs, and then all the jobs in each phase of the external merge
 Each of these phases is separated by an informative comment line for your scripting
 convenience.
 
+9. LA2gfa [-a:<db>] <align:las>
+
+Write the overlaps and containments found by daligner in Graphical Fragment Assembly
+(gfa) format. This textual output is quite large due to the long CIGAR strings but
+is suitable for small assembly projects and useful for prototyping algorithms.
+
 Example:
 
 //  Recall G.db from the example in DAZZ_DB/README
@@ -321,4 +327,5 @@ G: 62,654 records
    1  445 c   [ 9,828..14,521] x [     0.. 4,789] :   <  1,036 diffs  ( 47 trace pts)
    1  464 n   [     0.. 1,942] x [12,416..14,281] :   <    411 diffs  ( 19 trace pts)
 
+> LA2gfa -a:G G.las > G.gfa
 ...
