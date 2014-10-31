@@ -58,10 +58,7 @@
 #include "DB.h"
 #include "align.h"
 
-static char *Usage[] =
-    { "[-coU] [-(a|r):<db>] [-i<int(4)>] [-w<int(100)>] [-b<int(10)>] ",
-      "       <align:las> [ <reads:range> ... ]"
-    };
+static char *Usage = "-a:<db> <align:las>";
 
 void Print_Cigar(FILE *file, Alignment *align, int a_is_base_sequence)
 {
@@ -178,14 +175,16 @@ int main(int argc, char *argv[])
     argc = j;
 
     if (argc <= 1)
-      { fprintf(stderr,"Usage: %s %s\n",Prog_Name,Usage[0]);
-        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
+      { fprintf(stderr,"Usage: %s %s\n",Prog_Name,Usage);
         exit (1);
       }
     (void)flags; //shhh warnings
   }
   
-
+  if(!ALIGN)
+    { fprintf(stderr,"Error a .db file must be provided with -a\n");
+      exit (1);
+    }
   //  Initiate file reading and read (novl, tspace) header
   
   { char  *over, *pwd, *root;
