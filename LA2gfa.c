@@ -74,8 +74,10 @@ void Print_Cigar(FILE *file, Alignment *align, int a_is_base_sequence)
   int aend = align->path->aepos;
   int bend = align->path->bepos;
   
+#ifdef DEBUG_GFA
   fprintf(stderr, "CIGAR -- LA coordinates A: [%d %d] B: [%d %d]\n", abeg, aend, bbeg, bend);
-  
+#endif
+
   // Grab the path trace from the alignment
   int *trace = align->path->trace;
   int tlen  = align->path->tlen;
