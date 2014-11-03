@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
               }
             else
               { contained_name = b_name;
-                contained_name = a_name;
+                container_name = a_name;
                 position = aln->path->abpos;
                 a_is_base_sequence = 1;
               }
